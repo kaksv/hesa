@@ -2,10 +2,11 @@
   "name": "hedera-enterprise-settlement-agent",
   "version": "1.0.0",
   "description": "Hedera Enterprise Settlement Agent (HESA) with custom plugin extensibility",
-  "main": "src/index.js",
+  "main": "src/server.js",
   "scripts": {
-    "start": "node src/index.js",
-    "lint": "node --check src/index.js && node --check src/plugins/compliance-plugin.js && node --check src/config/system-prompt.js",
+    "start": "node src/server.js",
+    "cli": "node src/index.js",
+    "lint": "node --check src/index.js && node --check src/server.js && node --check src/agent.js && node --check src/plugins/compliance-plugin.js && node --check src/config/system-prompt.js",
     "test": "npm run lint"
   },
   "keywords": [],
@@ -18,7 +19,9 @@
     "@hiero-ledger/sdk": "^2.84.0",
     "@langchain/core": "^1.1.48",
     "@langchain/openai": "^1.4.7",
+    "cors": "^2.8.6",
     "dotenv": "^17.4.2",
+    "express": "^5.2.1",
     "langchain": "^1.4.2",
     "zod": "^3.25.76"
   }

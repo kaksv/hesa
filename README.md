@@ -35,10 +35,53 @@ Populate `.env`:
 - `OPENAI_API_KEY`: OpenAI key
 - `OPENAI_MODEL` (optional): defaults to `gpt-4o-mini`
 
-## Run
+## Run locally (CLI)
 
 ```bash
-npm run start -- "Run KYC for Acme Corp in UG for recurring SaaS billing, draft invoice for 5 HBAR due today, transfer 5 HBAR to 0.0.1234, then create a topic and submit an audit receipt message with invoice details."
+npm run cli -- "Run KYC for Acme Corp in UG for recurring SaaS billing, draft invoice for 5 HBAR due today, transfer 5 HBAR to 0.0.1234, then create a topic and submit an audit receipt message with invoice details."
+```
+
+## Host live demo URL (required for hosted submission)
+
+HESA exposes an HTTP API for deployment platforms (Railway/Render/Docker).
+
+### Start API locally
+
+```bash
+npm run start
+```
+
+Endpoints:
+
+- `GET /health` — service health check
+- `GET /demo` — ready-made demo prompt + curl command
+- `POST /run` — execute settlement workflow (`{ "prompt": "..." }`)
+
+If `DEMO_API_KEY` is set, send:
+
+`Authorization: Bearer <DEMO_API_KEY>`
+
+### Deploy to Railway (recommended)
+
+1. Push repo to public GitHub.
+2. Railway → New Project → Deploy from GitHub.
+3. Set env vars from `.env.example` (`ACCOUNT_ID`, `PRIVATE_KEY`, `OPENAI_API_KEY`, `DEMO_API_KEY`, `PUBLIC_BASE_URL`).
+4. Deploy using included `Dockerfile` + `railway.toml`.
+5. Verify: `curl https://YOUR-HOST/health`
+
+Full step-by-step: [docs/hosted-demo.md](docs/hosted-demo.md)
+
+### Live demo
+
+- **DEMO_URL**: _add your deployed URL here after deploy_
+
+Example production test:
+
+```bash
+curl -X POST "https://YOUR-HOST/run" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_DEMO_API_KEY" \
+  -d '{"prompt":"Run KYC for Acme Corp in UG, draft invoice for 1 HBAR due today, transfer 1 HBAR to 0.0.RECIPIENT, then create topic and submit audit receipt."}'
 ```
 
 ## Submission checklist
