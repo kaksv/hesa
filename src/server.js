@@ -15,6 +15,15 @@ const app = express();
 const port = Number(process.env.PORT ?? 3000);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const docsHtmlPath = path.join(__dirname, "..", "docs", "demo.html");
+const REQUIRED_RUNTIME_VARS = ["ACCOUNT_ID", "PRIVATE_KEY", "OPENAI_API_KEY"];
+
+function getEnvDiagnostics() {
+  const present = Object.fromEntries(
+    REQUIRED_RUNTIME_VARS.map((key) => [key, Boolean(process.env[key]?.trim())]),
+  );
+  const missing = REQUIRED_RUNTIME_VARS.filter((key) => !present[key]);
+  return { present, missing };
+}
 
 app.use(cors());
 app.use(express.json({ limit: "32kb" }));
@@ -62,11 +71,15 @@ app.get("/", (_req, res) => {
 });
 
 app.get("/health", (_req, res) => {
+  const diagnostics = getEnvDiagnostics();
   res.json({
     status: "ok",
     agent: AGENT_SHORT_NAME,
     version: AGENT_VERSION,
     network: "hedera-testnet",
+    env: diagnostics.present,
+    ready: diagnostics.missing.length === 0,
+    missing: diagnostics.missing,
   });
 });
 
