@@ -58,7 +58,9 @@ Endpoints:
 - `GET /demo` — ready-made demo prompt + curl command
 - `POST /run` — execute settlement workflow (`{ "prompt": "..." }`)
 
-`DEMO_API_KEY` is optional. If set, send:
+Demo mode is open by default. Auth is enforced only when `DEMO_AUTH_REQUIRED=true`.
+
+If auth is enabled, send:
 
 `Authorization: Bearer <DEMO_API_KEY>`
 
@@ -66,7 +68,7 @@ Endpoints:
 
 1. Push repo to public GitHub.
 2. Railway → New Project → Deploy from GitHub.
-3. Set env vars from `.env.example` (`ACCOUNT_ID`, `PRIVATE_KEY`, `OPENAI_API_KEY`, and optional `DEMO_API_KEY`, `PUBLIC_BASE_URL`).
+3. Set env vars from `.env.example` (`ACCOUNT_ID`, `PRIVATE_KEY`, `OPENAI_API_KEY`, and optional `PUBLIC_BASE_URL`, `DEMO_AUTH_REQUIRED`, `DEMO_API_KEY`).
 4. Deploy using included `Dockerfile` + `railway.toml`.
 5. Verify: `curl https://YOUR-HOST/health`
 
@@ -102,7 +104,7 @@ curl -X POST "https://YOUR-HOST/run" \
   -d '{"prompt":"Run KYC for Acme Corp in UG, draft invoice for 1 HBAR due today, transfer 1 HBAR to 0.0.RECIPIENT, then create topic and submit audit receipt."}'
 ```
 
-If you enabled `DEMO_API_KEY`, add:
+If you enabled auth (`DEMO_AUTH_REQUIRED=true`), add:
 
 ```bash
 -H "Authorization: Bearer YOUR_DEMO_API_KEY"

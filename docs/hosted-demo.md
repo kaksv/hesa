@@ -16,7 +16,8 @@ Use this guide to deploy **Hedera Enterprise Settlement Agent (HESA)** and produ
 | `PRIVATE_KEY` | Yes | Operator private key |
 | `OPENAI_API_KEY` | Yes | LLM provider key |
 | `OPENAI_MODEL` | No | Defaults to `gpt-4o-mini` |
-| `DEMO_API_KEY` | No (Optional) | If set, protects `/run` from public abuse |
+| `DEMO_AUTH_REQUIRED` | No (Optional) | Set to `true` to require API key auth on `/run` |
+| `DEMO_API_KEY` | No (Optional) | Used only when `DEMO_AUTH_REQUIRED=true` |
 | `PUBLIC_BASE_URL` | Recommended | Your public URL (e.g. `https://hesa.up.railway.app`) |
 
 6. Deploy and copy the public domain Railway assigns.
@@ -64,7 +65,7 @@ curl -X POST "https://YOUR-HOST/run" \
   }'
 ```
 
-If you enabled `DEMO_API_KEY`, include:
+If you enabled auth (`DEMO_AUTH_REQUIRED=true`), include:
 
 ```bash
 -H "Authorization: Bearer YOUR_DEMO_API_KEY"

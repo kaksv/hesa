@@ -17,6 +17,10 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const docsHtmlPath = path.join(__dirname, "..", "docs", "demo.html");
 const REQUIRED_RUNTIME_VARS = ["ACCOUNT_ID", "PRIVATE_KEY", "OPENAI_API_KEY"];
 
+function isAuthRequired() {
+  return String(process.env.DEMO_AUTH_REQUIRED ?? "false").toLowerCase() === "true";
+}
+
 function getEnvDiagnostics() {
   const present = Object.fromEntries(
     REQUIRED_RUNTIME_VARS.map((key) => [key, Boolean(process.env[key]?.trim())]),
@@ -31,14 +35,21 @@ app.use(express.json({ limit: "32kb" }));
 function unauthorized(res) {
   return res.status(401).json({
     error: "Unauthorized",
-    hint: "Set Authorization: Bearer <DEMO_API_KEY> when DEMO_API_KEY is configured",
+    hint: "Set Authorization: Bearer <DEMO_API_KEY> when DEMO_AUTH_REQUIRED=true",
   });
 }
 
 function checkApiKey(req, res) {
+  if (!isAuthRequired()) {
+    return true;
+  }
+
   const expected = process.env.DEMO_API_KEY?.trim();
   if (!expected) {
-    return true;
+    return res.status(500).json({
+      error: "Server misconfigured",
+      message: "DEMO_AUTH_REQUIRED=true but DEMO_API_KEY is missing",
+    });
   }
 
   const header = req.get("authorization");
@@ -67,6 +78,7 @@ app.get("/", (_req, res) => {
       demo: "GET /demo",
     },
     demoPrompt: getDemoPrompt(),
+    authRequired: isAuthRequired(),
   });
 });
 
@@ -80,6 +92,7 @@ app.get("/health", (_req, res) => {
     env: diagnostics.present,
     ready: diagnostics.missing.length === 0,
     missing: diagnostics.missing,
+    authRequired: isAuthRequired(),
   });
 });
 
@@ -93,12 +106,12 @@ app.get("/demo", (_req, res) => {
     method: "POST",
     path: "/run",
     body: { prompt: getDemoPrompt() },
+    authRequired: isAuthRequired(),
     curl: `curl -X POST "${
       process.env.PUBLIC_BASE_URL ?? `http://localhost:${port}`
     }/run" \\
   -H "Content-Type: application/json" \\
-  -H "Authorization: Bearer $DEMO_API_KEY" \\
-  -d '${JSON.stringify({ prompt: getDemoPrompt() })}'`,
+  ${isAuthRequired() ? '-H "Authorization: Bearer $DEMO_API_KEY" \\\n  ' : ""}-d '${JSON.stringify({ prompt: getDemoPrompt() })}'`,
   });
 });
 
