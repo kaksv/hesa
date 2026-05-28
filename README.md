@@ -72,6 +72,24 @@ Endpoints:
 
 Full step-by-step: [docs/hosted-demo.md](docs/hosted-demo.md)
 
+## Frontend demo app (Vite + Tailwind)
+
+A polished frontend is available in `frontend` with two tabs:
+
+- `How It Works` — visual enterprise workflow map
+- `Try HESA` — live prompt runner against your hosted Railway API
+
+Run locally:
+
+```bash
+cd frontend
+npm install
+cp .env.example .env
+npm run dev
+```
+
+Set `VITE_HESA_API_URL` in `frontend/.env` to your Railway URL.
+
 ### Live demo
 
 - **DEMO_URL**: _add your deployed URL here after deploy_
