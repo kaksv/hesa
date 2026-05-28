@@ -1,0 +1,20 @@
+{
+  "name": "@hesa/client",
+  "version": "0.1.0",
+  "description": "Tiny JS client for Hedera Enterprise Settlement Agent (HESA)",
+  "type": "module",
+  "main": "./src/index.js",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "files": [
+    "src"
+  ],
+  "keywords": [
+    "hedera",
+    "agent",
+    "hesa",
+    "api-client"
+  ],
+  "license": "ISC"
+}

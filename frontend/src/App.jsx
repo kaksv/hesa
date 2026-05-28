@@ -13,28 +13,59 @@ const WORKFLOW_STEPS = [
 ];
 
 function parseToolTimeline(outputText) {
-  const text = String(outputText ?? "").toUpperCase();
-  return WORKFLOW_STEPS.map((step) => ({
-    ...step,
-    status: text.includes(step.tool) ? "detected" : "pending",
-  }));
+  const text = String(outputText ?? "");
+  const upper = text.toUpperCase();
+  const checks = {
+    KYC_REVIEW_TOOL:
+      /KYC STATUS|KYC REVIEW/.test(upper) || /APPROVED|REVIEW_REQUIRED/.test(upper),
+    INVOICE_DRAFT_TOOL:
+      /INVOICE ID|INVOICE DRAFT/.test(upper) || /INV-\d+/i.test(text),
+    TRANSFER_HBAR_TOOL:
+      /TRANSFER STATUS|TRANSFERRED|FAILED TO TRANSFER|TRANSFER_HBAR_TOOL/.test(upper),
+    CREATE_TOPIC_TOOL:
+      /TOPIC CREATED|CREATE_TOPIC_TOOL|TOPIC WITH ID|TOPIC ID/.test(upper),
+    SUBMIT_TOPIC_MESSAGE_TOOL:
+      /AUDIT RECEIPT MESSAGE SUBMITTED|SUBMIT_TOPIC_MESSAGE_TOOL|AUDIT RECEIPT/.test(upper),
+  };
+
+  const transferFailed = /FAILED TO TRANSFER|INVALID_ACCOUNT_ID|INSUFFICIENT|NOT_FOUND/.test(
+    upper,
+  );
+
+  return WORKFLOW_STEPS.map((step) => {
+    const detected = checks[step.tool];
+    if (!detected) {
+      return { ...step, status: "pending" };
+    }
+    if (step.tool === "TRANSFER_HBAR_TOOL" && transferFailed) {
+      return { ...step, status: "failed" };
+    }
+    return { ...step, status: "completed" };
+  });
 }
 
 function extractEntities(outputText) {
   const text = String(outputText ?? "");
-  const invoiceId = text.match(/INV-\d+/i)?.[0] ?? "Not detected";
+  const invoiceId =
+    text.match(/INV-\d+/i)?.[0] ??
+    text.match(/Invoice ID\**:\**\s*([^\n]+)/i)?.[1]?.trim() ??
+    "Not detected";
   const topicId =
     text
       .match(/\b0\.0\.\d+\b(?=.*topic)|topic.*\b0\.0\.\d+\b/i)?.[0]
       ?.match(/\b0\.0\.\d+\b/)?.[0] ?? "Not detected";
   const accounts = Array.from(new Set(text.match(/\b0\.0\.\d+\b/g) ?? [])).slice(0, 4);
-  const kycStatus = text.includes("REVIEW_REQUIRED")
+  const upper = text.toUpperCase();
+  const kycStatus = upper.includes("REVIEW_REQUIRED")
     ? "REVIEW_REQUIRED"
-    : text.includes("APPROVED")
+    : upper.includes("APPROVED")
       ? "APPROVED"
       : "Not detected";
-  const transferSeen = text.toUpperCase().includes("TRANSFER_HBAR_TOOL");
-  const topicSeen = text.toUpperCase().includes("CREATE_TOPIC_TOOL");
+  const transferSeen =
+    /TRANSFER STATUS|TRANSFERRED|FAILED TO TRANSFER|TRANSFER_HBAR_TOOL/.test(upper);
+  const topicSeen =
+    /TOPIC CREATED|CREATE_TOPIC_TOOL|TOPIC WITH ID|TOPIC ID/.test(upper) ||
+    topicId !== "Not detected";
 
   return { invoiceId, topicId, accounts, kycStatus, transferSeen, topicSeen };
 }
@@ -78,6 +109,7 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [response, setResponse] = useState(null);
+  const [copied, setCopied] = useState("");
 
   const timeline = useMemo(
     () => parseToolTimeline(response?.output ?? ""),
@@ -87,6 +119,31 @@ function App() {
     () => extractEntities(response?.output ?? ""),
     [response?.output],
   );
+  const embedInstallSnippet = "npm install @hesa/client";
+  const embedCodeSnippet = `import { createHesaClient } from "@hesa/client";
+
+const hesa = createHesaClient({
+  baseUrl: "${apiBaseUrl || "https://hesa-agent-production.up.railway.app"}",
+});
+
+const result = await hesa.run({
+  prompt: "Run KYC for Acme Corp in UG, draft invoice for 1 HBAR due today, transfer 1 HBAR to 0.0.RECIPIENT_ACCOUNT_ID, then create a topic and submit an audit receipt message with invoice details.",
+});
+
+console.log(result);`;
+  const embedCurlSnippet = `curl -X POST "${(apiBaseUrl || "https://hesa-agent-production.up.railway.app").replace(/\/$/, "")}/run" \\
+  -H "Content-Type: application/json" \\
+  -d '{"prompt":"Run KYC for Acme Corp in UG, draft invoice for 1 HBAR due today, transfer 1 HBAR to 0.0.RECIPIENT_ACCOUNT_ID, then create a topic and submit an audit receipt message with invoice details."}'`;
+
+  async function copyToClipboard(label, value) {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(label);
+      setTimeout(() => setCopied(""), 1500);
+    } catch {
+      setCopied("");
+    }
+  }
 
   async function runAgent() {
     setLoading(true);
@@ -156,6 +213,17 @@ function App() {
           >
             Try HESA
           </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("embed")}
+            className={`min-h-10 flex-1 rounded-lg px-4 py-2 text-sm font-medium transition ${
+              activeTab === "embed"
+                ? "bg-cyan-400 text-slate-950"
+                : "text-slate-300 hover:bg-slate-800"
+            } focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950`}
+          >
+            Embed
+          </button>
         </div>
 
         {activeTab === "overview" ? (
@@ -181,7 +249,7 @@ function App() {
               ))}
             </ol>
           </section>
-        ) : (
+        ) : activeTab === "try" ? (
           <section className="grid gap-6 lg:grid-cols-[1.2fr_1fr]">
             <div className="rounded-3xl border border-slate-800 bg-slate-900/60 p-6">
               <h2 className="text-xl font-semibold">Run Agent</h2>
@@ -217,6 +285,12 @@ function App() {
               <label className="mt-4 block text-sm font-medium" htmlFor="prompt">
                 Prompt
               </label>
+              <div className="mt-2 rounded-lg border border-amber-600/40 bg-amber-900/20 px-3 py-2 text-xs text-amber-100">
+                Reminder: replace placeholder account values (for example
+                <code className="mx-1 rounded bg-amber-950/60 px-1.5 py-0.5">0.0.RECIPIENT_ACCOUNT_ID</code>)
+                with a real Hedera testnet <code className="mx-1 rounded bg-amber-950/60 px-1.5 py-0.5">ACCOUNT_ID</code>
+                you control.
+              </div>
               <textarea
                 id="prompt"
                 className="mt-2 min-h-36 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 focus-visible:ring-2 focus-visible:ring-cyan-300"
@@ -314,8 +388,10 @@ function App() {
                           <li
                             key={step.tool}
                             className={`flex items-center justify-between rounded-lg border px-3 py-2 text-sm ${
-                              step.status === "detected"
+                              step.status === "completed"
                                 ? "border-emerald-600/60 bg-emerald-900/30 text-emerald-200"
+                                : step.status === "failed"
+                                  ? "border-amber-600/60 bg-amber-900/30 text-amber-200"
                                 : "border-slate-700 bg-slate-900 text-slate-300"
                             }`}
                           >
@@ -357,6 +433,93 @@ function App() {
                     </details>
                   </div>
                 ) : null}
+              </div>
+            </div>
+          </section>
+        ) : (
+          <section className="grid gap-6 lg:grid-cols-[1.1fr_1fr]">
+            <div className="rounded-3xl border border-slate-800 bg-slate-900/60 p-6">
+              <h2 className="text-xl font-semibold">Embed HESA in Any JS App</h2>
+              <p className="mt-2 text-sm text-slate-300">
+                Use the tiny client wrapper for one-import integration. Good for web apps,
+                internal tools, bots, and backend workflows.
+              </p>
+
+              <article className="mt-5 rounded-xl border border-slate-700 bg-slate-900 p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <h3 className="text-sm font-semibold">1) Install client</h3>
+                  <button
+                    type="button"
+                    onClick={() => copyToClipboard("install", embedInstallSnippet)}
+                    className="min-h-10 rounded-lg border border-slate-600 px-3 text-xs font-semibold text-slate-200 transition hover:border-cyan-500 hover:text-cyan-200 focus-visible:ring-2 focus-visible:ring-cyan-300"
+                  >
+                    Copy
+                  </button>
+                </div>
+                <pre className="mt-3 overflow-auto rounded-lg border border-slate-700 bg-slate-950 p-3 text-xs text-slate-200">
+                  {embedInstallSnippet}
+                </pre>
+              </article>
+
+              <article className="mt-4 rounded-xl border border-slate-700 bg-slate-900 p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <h3 className="text-sm font-semibold">2) Use in code</h3>
+                  <button
+                    type="button"
+                    onClick={() => copyToClipboard("sdk", embedCodeSnippet)}
+                    className="min-h-10 rounded-lg border border-slate-600 px-3 text-xs font-semibold text-slate-200 transition hover:border-cyan-500 hover:text-cyan-200 focus-visible:ring-2 focus-visible:ring-cyan-300"
+                  >
+                    Copy
+                  </button>
+                </div>
+                <pre className="mt-3 max-h-80 overflow-auto rounded-lg border border-slate-700 bg-slate-950 p-3 text-xs text-slate-200">
+                  {embedCodeSnippet}
+                </pre>
+              </article>
+
+              <article className="mt-4 rounded-xl border border-slate-700 bg-slate-900 p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <h3 className="text-sm font-semibold">3) Optional raw HTTP</h3>
+                  <button
+                    type="button"
+                    onClick={() => copyToClipboard("curl", embedCurlSnippet)}
+                    className="min-h-10 rounded-lg border border-slate-600 px-3 text-xs font-semibold text-slate-200 transition hover:border-cyan-500 hover:text-cyan-200 focus-visible:ring-2 focus-visible:ring-cyan-300"
+                  >
+                    Copy
+                  </button>
+                </div>
+                <pre className="mt-3 max-h-52 overflow-auto rounded-lg border border-slate-700 bg-slate-950 p-3 text-xs text-slate-200">
+                  {embedCurlSnippet}
+                </pre>
+              </article>
+
+              {copied ? (
+                <p className="mt-3 text-sm text-emerald-300">Copied {copied} snippet.</p>
+              ) : null}
+            </div>
+
+            <div className="space-y-6">
+              <div className="rounded-3xl border border-slate-800 bg-slate-900/60 p-6">
+                <h3 className="text-lg font-semibold">Integration Notes</h3>
+                <ul className="mt-4 space-y-3 text-sm text-slate-300">
+                  <li className="rounded-lg border border-slate-700 bg-slate-900 p-3">
+                    Client defaults to JSON over HTTP with a single `run()` call.
+                  </li>
+                  <li className="rounded-lg border border-slate-700 bg-slate-900 p-3">
+                    If backend auth is enabled, pass `apiKey` in client config.
+                  </li>
+                  <li className="rounded-lg border border-slate-700 bg-slate-900 p-3">
+                    Works in browser and Node.js runtimes.
+                  </li>
+                </ul>
+              </div>
+
+              <div className="rounded-3xl border border-slate-800 bg-slate-900/60 p-6">
+                <h3 className="text-lg font-semibold">Package Location</h3>
+                <p className="mt-2 text-sm text-slate-300">
+                  This repo includes a publish-ready package at
+                  <code className="ml-1 rounded bg-slate-800 px-1.5 py-0.5">packages/hesa-client</code>.
+                </p>
               </div>
             </div>
           </section>

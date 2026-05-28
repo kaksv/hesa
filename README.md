@@ -76,10 +76,11 @@ Full step-by-step: [docs/hosted-demo.md](docs/hosted-demo.md)
 
 ## Frontend demo app (Vite + Tailwind)
 
-A polished frontend is available in `frontend` with two tabs:
+A polished frontend is available in `frontend` with three tabs:
 
 - `How It Works` — visual enterprise workflow map
 - `Try HESA` — live prompt runner against your hosted Railway API
+- `Embed` — copy-paste snippets for SDK and HTTP integration
 
 Run locally:
 
@@ -91,6 +92,17 @@ npm run dev
 ```
 
 Set `VITE_HESA_API_URL` in `frontend/.env` to your Railway URL.
+
+## NPM client wrapper
+
+This repo includes a tiny reusable JS client in `packages/hesa-client`.
+
+Core API:
+
+- `createHesaClient({ baseUrl, apiKey? })`
+- `client.health()`
+- `client.demo()`
+- `client.run({ prompt })`
 
 ### Live demo
 
