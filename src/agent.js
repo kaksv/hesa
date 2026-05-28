@@ -3,12 +3,16 @@ import { AgentMode } from "@hashgraph/hedera-agent-kit";
 import {
   coreAccountPlugin,
   coreConsensusPlugin,
-  coreTransactionQueryPlugin,
+  coreAccountPluginToolNames,
+  coreConsensusPluginToolNames,
 } from "@hashgraph/hedera-agent-kit/plugins";
 import { HederaLangchainToolkit } from "@hashgraph/hedera-agent-kit-langchain";
 import { ChatOpenAI } from "@langchain/openai";
 import { createAgent } from "langchain";
-import { compliancePlugin } from "./plugins/compliance-plugin.js";
+import {
+  compliancePlugin,
+  compliancePluginToolNames,
+} from "./plugins/compliance-plugin.js";
 import { SYSTEM_PROMPT } from "./config/system-prompt.js";
 
 export const AGENT_NAME = "Hedera Enterprise Settlement Agent";
@@ -46,11 +50,16 @@ async function createEnterpriseAgent() {
   const toolkit = new HederaLangchainToolkit({
     client,
     configuration: {
-      tools: [],
+      tools: [
+        compliancePluginToolNames.KYC_REVIEW_TOOL,
+        compliancePluginToolNames.INVOICE_DRAFT_TOOL,
+        coreAccountPluginToolNames.TRANSFER_HBAR_TOOL,
+        coreConsensusPluginToolNames.CREATE_TOPIC_TOOL,
+        coreConsensusPluginToolNames.SUBMIT_TOPIC_MESSAGE_TOOL,
+      ],
       plugins: [
         coreAccountPlugin,
         coreConsensusPlugin,
-        coreTransactionQueryPlugin,
         compliancePlugin,
       ],
       context: {
