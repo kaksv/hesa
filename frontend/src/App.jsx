@@ -324,7 +324,22 @@ console.log(result);`;
                   </p>
                 ) : null}
                 {loading ? (
-                  <p className="mt-3 text-sm text-slate-300">Executing on Hedera testnet...</p>
+                  <div className="mt-3 rounded-xl border border-cyan-700/30 bg-cyan-900/10 p-4">
+                    <div className="flex items-center gap-3">
+                      <span
+                        className="h-5 w-5 animate-spin rounded-full border-2 border-cyan-300/30 border-t-cyan-300 motion-reduce:animate-none"
+                        aria-hidden="true"
+                      />
+                      <div>
+                        <p className="text-sm font-medium text-cyan-100">
+                          Executing on Hedera testnet...
+                        </p>
+                        <p className="text-xs text-cyan-200/80">
+                          Running KYC, settlement, and audit workflow steps.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 ) : null}
                 {response ? (
                   <div className="mt-4 space-y-4">
