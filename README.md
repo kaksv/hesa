@@ -94,12 +94,13 @@ Set `VITE_HESA_API_URL` in `frontend/.env` to your Railway URL.
 
 ### Live demo
 
-- **DEMO_URL**: _add your deployed URL here after deploy_
+- **DEMO_URL**: [https://hesa-agent-production.up.railway.app/](https://hesa-agent-production.up.railway.app/)
+- **Browser docs UI**: [https://hesa-agent-production.up.railway.app/docs](https://hesa-agent-production.up.railway.app/docs)
 
 Example production test:
 
 ```bash
-curl -X POST "https://YOUR-HOST/run" \
+curl -X POST "https://hesa-agent-production.up.railway.app/run" \
   -H "Content-Type: application/json" \
   -d '{"prompt":"Run KYC for Acme Corp in UG, draft invoice for 1 HBAR due today, transfer 1 HBAR to 0.0.RECIPIENT, then create topic and submit audit receipt."}'
 ```
