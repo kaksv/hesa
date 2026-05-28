@@ -437,7 +437,7 @@ console.log(result);`;
             </div>
           </section>
         ) : (
-          <section className="grid gap-6 lg:grid-cols-[1.1fr_1fr]">
+          <section className="mx-auto grid w-full max-w-4xl gap-6">
             <div className="rounded-3xl border border-slate-800 bg-slate-900/60 p-6">
               <h2 className="text-xl font-semibold">Embed HESA in Any JS App</h2>
               <p className="mt-2 text-sm text-slate-300">
@@ -456,7 +456,7 @@ console.log(result);`;
                     Copy
                   </button>
                 </div>
-                <pre className="mt-3 overflow-auto rounded-lg border border-slate-700 bg-slate-950 p-3 text-xs text-slate-200">
+                <pre className="mt-3 overflow-x-auto rounded-lg border border-slate-700 bg-slate-950 p-3 text-xs text-slate-200">
                   {embedInstallSnippet}
                 </pre>
               </article>
@@ -472,7 +472,7 @@ console.log(result);`;
                     Copy
                   </button>
                 </div>
-                <pre className="mt-3 max-h-80 overflow-auto rounded-lg border border-slate-700 bg-slate-950 p-3 text-xs text-slate-200">
+                <pre className="mt-3 max-h-80 overflow-auto whitespace-pre-wrap break-words rounded-lg border border-slate-700 bg-slate-950 p-3 text-[11px] leading-5 text-slate-200">
                   {embedCodeSnippet}
                 </pre>
               </article>
@@ -488,7 +488,7 @@ console.log(result);`;
                     Copy
                   </button>
                 </div>
-                <pre className="mt-3 max-h-52 overflow-auto rounded-lg border border-slate-700 bg-slate-950 p-3 text-xs text-slate-200">
+                <pre className="mt-3 max-h-52 overflow-auto whitespace-pre-wrap break-words rounded-lg border border-slate-700 bg-slate-950 p-3 text-[11px] leading-5 text-slate-200">
                   {embedCurlSnippet}
                 </pre>
               </article>
@@ -518,7 +518,10 @@ console.log(result);`;
                 <h3 className="text-lg font-semibold">Package Location</h3>
                 <p className="mt-2 text-sm text-slate-300">
                   This repo includes a publish-ready package at
-                  <code className="ml-1 rounded bg-slate-800 px-1.5 py-0.5">packages/hesa-client</code>.
+                  <code className="ml-1 rounded bg-slate-800 px-1.5 py-0.5">
+                    packages/hesa-client
+                  </code>
+                  .
                 </p>
               </div>
             </div>
