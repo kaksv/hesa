@@ -20,6 +20,54 @@ function parseToolTimeline(outputText) {
   }));
 }
 
+function extractEntities(outputText) {
+  const text = String(outputText ?? "");
+  const invoiceId = text.match(/INV-\d+/i)?.[0] ?? "Not detected";
+  const topicId =
+    text
+      .match(/\b0\.0\.\d+\b(?=.*topic)|topic.*\b0\.0\.\d+\b/i)?.[0]
+      ?.match(/\b0\.0\.\d+\b/)?.[0] ?? "Not detected";
+  const accounts = Array.from(new Set(text.match(/\b0\.0\.\d+\b/g) ?? [])).slice(0, 4);
+  const kycStatus = text.includes("REVIEW_REQUIRED")
+    ? "REVIEW_REQUIRED"
+    : text.includes("APPROVED")
+      ? "APPROVED"
+      : "Not detected";
+  const transferSeen = text.toUpperCase().includes("TRANSFER_HBAR_TOOL");
+  const topicSeen = text.toUpperCase().includes("CREATE_TOPIC_TOOL");
+
+  return { invoiceId, topicId, accounts, kycStatus, transferSeen, topicSeen };
+}
+
+function StatusPill({ label, tone = "neutral" }) {
+  const tones = {
+    success: "border-emerald-500/40 bg-emerald-500/15 text-emerald-200",
+    warning: "border-amber-500/40 bg-amber-500/15 text-amber-200",
+    neutral: "border-slate-600 bg-slate-800 text-slate-200",
+  };
+  return (
+    <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${tones[tone]}`}>
+      {label}
+    </span>
+  );
+}
+
+function HashScanLink({ id, type }) {
+  const path = type === "topic" ? "topic" : "account";
+  const href = `https://hashscan.io/testnet/${path}/${id}`;
+
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noreferrer"
+      className="inline-flex min-h-10 items-center rounded-lg border border-cyan-700/40 bg-cyan-900/20 px-3 py-2 text-xs font-medium text-cyan-100 transition hover:border-cyan-500 hover:bg-cyan-800/30 focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
+    >
+      {type === "topic" ? "Topic" : "Account"}: {id}
+    </a>
+  );
+}
+
 function App() {
   const [activeTab, setActiveTab] = useState("overview");
   const [apiBaseUrl, setApiBaseUrl] = useState(
@@ -33,6 +81,10 @@ function App() {
 
   const timeline = useMemo(
     () => parseToolTimeline(response?.output ?? ""),
+    [response?.output],
+  );
+  const entities = useMemo(
+    () => extractEntities(response?.output ?? ""),
     [response?.output],
   );
 
@@ -69,15 +121,15 @@ function App() {
 
   return (
     <main className="min-h-screen bg-slate-950 text-slate-100">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-8 sm:px-6">
-        <header className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
+      <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-8 sm:px-6">
+        <header className="rounded-3xl border border-cyan-900/60 bg-gradient-to-r from-slate-900 via-slate-900 to-cyan-950/50 p-6 shadow-[0_0_0_1px_rgba(8,47,73,0.2)]">
           <p className="text-xs font-semibold tracking-[0.2em] text-cyan-300">HESA</p>
           <h1 className="mt-2 text-3xl font-semibold sm:text-4xl">
             Hedera Enterprise Settlement Agent
           </h1>
           <p className="mt-3 max-w-3xl text-sm text-slate-300 sm:text-base">
-            Enterprise workflow automation on Hedera: KYC checks, invoice drafting, HBAR
-            settlement, and immutable audit receipts.
+            Enterprise workflow automation on Hedera with a production-style flow: KYC,
+            invoice drafting, settlement, and immutable audit receipts.
           </p>
         </header>
 
@@ -107,7 +159,7 @@ function App() {
         </div>
 
         {activeTab === "overview" ? (
-          <section className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
+          <section className="rounded-3xl border border-slate-800 bg-slate-900/60 p-6">
             <h2 className="text-xl font-semibold">Visual Workflow</h2>
             <p className="mt-2 text-sm text-slate-300">
               This sequence models an enterprise payment operation from pre-check to final
@@ -115,11 +167,14 @@ function App() {
             </p>
             <ol className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
               {WORKFLOW_STEPS.map((step, index) => (
-                <li key={step.tool} className="rounded-xl border border-slate-700 bg-slate-900 p-4">
+                <li
+                  key={step.tool}
+                  className="relative rounded-2xl border border-slate-700 bg-slate-900/80 p-4 transition hover:-translate-y-0.5 hover:border-cyan-600/40"
+                >
                   <p className="text-xs text-cyan-300">Step {index + 1}</p>
                   <p className="mt-1 font-semibold">{step.name}</p>
                   <p className="mt-1 text-sm text-slate-300">{step.summary}</p>
-                  <p className="mt-3 rounded bg-slate-800 px-2 py-1 text-xs text-slate-200">
+                  <p className="mt-3 rounded-lg bg-slate-800 px-2 py-1 text-xs text-slate-200">
                     {step.tool}
                   </p>
                 </li>
@@ -127,8 +182,8 @@ function App() {
             </ol>
           </section>
         ) : (
-          <section className="grid gap-6 lg:grid-cols-[1.3fr_1fr]">
-            <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
+          <section className="grid gap-6 lg:grid-cols-[1.2fr_1fr]">
+            <div className="rounded-3xl border border-slate-800 bg-slate-900/60 p-6">
               <h2 className="text-xl font-semibold">Run Agent</h2>
               <p className="mt-2 text-sm text-slate-300">
                 Point this UI to your Railway deployment and execute a live workflow.
@@ -187,39 +242,120 @@ function App() {
             </div>
 
             <div className="space-y-6">
-              <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
-                <h3 className="text-lg font-semibold">Tool Timeline</h3>
-                <ul className="mt-4 space-y-3">
-                  {timeline.map((step) => (
-                    <li
-                      key={step.tool}
-                      className={`rounded-lg border px-3 py-2 text-sm ${
-                        step.status === "detected"
-                          ? "border-emerald-600/60 bg-emerald-900/30 text-emerald-200"
-                          : "border-slate-700 bg-slate-900 text-slate-300"
-                      }`}
-                    >
-                      <p className="font-medium">{step.name}</p>
-                      <p className="text-xs">{step.tool}</p>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
-                <h3 className="text-lg font-semibold">Response</h3>
+              <div className="rounded-3xl border border-slate-800 bg-slate-900/60 p-6">
+                <h3 className="text-lg font-semibold">Execution Summary</h3>
                 {!response && !loading && !error ? (
                   <p className="mt-3 text-sm text-slate-400">
-                    No run yet. Execute a workflow to view output.
+                    No run yet. Execute a workflow to view execution cards.
                   </p>
                 ) : null}
                 {loading ? (
                   <p className="mt-3 text-sm text-slate-300">Executing on Hedera testnet...</p>
                 ) : null}
                 {response ? (
-                  <pre className="mt-3 max-h-80 overflow-auto rounded-lg border border-slate-700 bg-slate-950 p-3 text-xs text-slate-200">
-                    {JSON.stringify(response, null, 2)}
-                  </pre>
+                  <div className="mt-4 space-y-4">
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <article className="rounded-xl border border-slate-700 bg-slate-900 p-4">
+                        <p className="text-xs text-slate-400">KYC Status</p>
+                        <div className="mt-2">
+                          <StatusPill
+                            label={entities.kycStatus}
+                            tone={
+                              entities.kycStatus === "APPROVED"
+                                ? "success"
+                                : entities.kycStatus === "REVIEW_REQUIRED"
+                                  ? "warning"
+                                  : "neutral"
+                            }
+                          />
+                        </div>
+                      </article>
+                      <article className="rounded-xl border border-slate-700 bg-slate-900 p-4">
+                        <p className="text-xs text-slate-400">Invoice</p>
+                        <p className="mt-2 text-sm font-medium">{entities.invoiceId}</p>
+                      </article>
+                      <article className="rounded-xl border border-slate-700 bg-slate-900 p-4">
+                        <p className="text-xs text-slate-400">Settlement</p>
+                        <div className="mt-2">
+                          <StatusPill
+                            label={entities.transferSeen ? "Transfer Detected" : "Pending"}
+                            tone={entities.transferSeen ? "success" : "neutral"}
+                          />
+                        </div>
+                      </article>
+                      <article className="rounded-xl border border-slate-700 bg-slate-900 p-4">
+                        <p className="text-xs text-slate-400">Audit Topic</p>
+                        <p className="mt-2 text-sm font-medium">{entities.topicId}</p>
+                      </article>
+                    </div>
+
+                    <article className="rounded-xl border border-slate-700 bg-slate-900 p-4">
+                      <p className="text-xs text-slate-400">Detected Hedera IDs</p>
+                      {entities.accounts.length ? (
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {entities.accounts.map((id) => (
+                            <span
+                              key={id}
+                              className="rounded-full border border-cyan-700/40 bg-cyan-900/20 px-2.5 py-1 text-xs"
+                            >
+                              {id}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="mt-2 text-sm text-slate-400">No account IDs detected yet.</p>
+                      )}
+                    </article>
+
+                    <article className="rounded-xl border border-slate-700 bg-slate-900 p-4">
+                      <h4 className="text-sm font-semibold">Workflow Timeline</h4>
+                      <ul className="mt-3 space-y-2">
+                        {timeline.map((step) => (
+                          <li
+                            key={step.tool}
+                            className={`flex items-center justify-between rounded-lg border px-3 py-2 text-sm ${
+                              step.status === "detected"
+                                ? "border-emerald-600/60 bg-emerald-900/30 text-emerald-200"
+                                : "border-slate-700 bg-slate-900 text-slate-300"
+                            }`}
+                          >
+                            <span>{step.name}</span>
+                            <span className="text-xs">{step.status}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </article>
+
+                    <article className="rounded-xl border border-slate-700 bg-slate-900 p-4">
+                      <h4 className="text-sm font-semibold">HashScan Links</h4>
+                      <p className="mt-1 text-xs text-slate-400">
+                        Click to verify accounts/topics on Hedera Testnet explorer.
+                      </p>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {entities.accounts.map((id) => (
+                          <HashScanLink key={`account-${id}`} id={id} type="account" />
+                        ))}
+                        {entities.topicSeen && entities.topicId !== "Not detected" ? (
+                          <HashScanLink id={entities.topicId} type="topic" />
+                        ) : null}
+                        {!entities.accounts.length &&
+                        !(entities.topicSeen && entities.topicId !== "Not detected") ? (
+                          <p className="text-sm text-slate-400">
+                            No linkable IDs detected yet.
+                          </p>
+                        ) : null}
+                      </div>
+                    </article>
+
+                    <details className="rounded-xl border border-slate-700 bg-slate-900 p-4">
+                      <summary className="cursor-pointer text-sm font-semibold">
+                        Raw Response (expand)
+                      </summary>
+                      <pre className="mt-3 max-h-72 overflow-auto rounded-lg border border-slate-700 bg-slate-950 p-3 text-xs text-slate-200">
+                        {JSON.stringify(response, null, 2)}
+                      </pre>
+                    </details>
+                  </div>
                 ) : null}
               </div>
             </div>
