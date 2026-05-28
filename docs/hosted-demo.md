@@ -16,7 +16,7 @@ Use this guide to deploy **Hedera Enterprise Settlement Agent (HESA)** and produ
 | `PRIVATE_KEY` | Yes | Operator private key |
 | `OPENAI_API_KEY` | Yes | LLM provider key |
 | `OPENAI_MODEL` | No | Defaults to `gpt-4o-mini` |
-| `DEMO_API_KEY` | Recommended | Protects `/run` from public abuse |
+| `DEMO_API_KEY` | No (Optional) | If set, protects `/run` from public abuse |
 | `PUBLIC_BASE_URL` | Recommended | Your public URL (e.g. `https://hesa.up.railway.app`) |
 
 6. Deploy and copy the public domain Railway assigns.
@@ -44,6 +44,14 @@ curl https://YOUR-HOST/demo
 
 This returns a ready-made demo prompt and curl example.
 
+Open browser demo UI:
+
+```bash
+open https://YOUR-HOST/docs
+```
+
+The `/docs` page lets judges run the workflow directly from browser.
+
 ## 3) Run the enterprise workflow (submission demo)
 
 Replace recipient account ID with a real testnet account you control.
@@ -51,10 +59,15 @@ Replace recipient account ID with a real testnet account you control.
 ```bash
 curl -X POST "https://YOUR-HOST/run" \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_DEMO_API_KEY" \
   -d '{
     "prompt": "Run KYC for Acme Corp in UG for recurring SaaS billing, draft invoice for 5 HBAR due today, transfer 1 HBAR to 0.0.RECIPIENT_ACCOUNT_ID, then create a topic and submit an audit receipt message with invoice details."
   }'
+```
+
+If you enabled `DEMO_API_KEY`, include:
+
+```bash
+-H "Authorization: Bearer YOUR_DEMO_API_KEY"
 ```
 
 ### What judges should see in output

@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HESA Demo Console</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      }
+      body {
+        max-width: 900px;
+        margin: 24px auto;
+        padding: 0 16px 48px;
+        line-height: 1.45;
+      }
+      h1 {
+        margin-bottom: 4px;
+      }
+      .muted {
+        opacity: 0.75;
+        margin-top: 0;
+      }
+      .panel {
+        border: 1px solid #6664;
+        border-radius: 10px;
+        padding: 14px;
+        margin-top: 16px;
+      }
+      label {
+        display: block;
+        margin-top: 10px;
+        font-weight: 600;
+      }
+      input,
+      textarea,
+      button {
+        width: 100%;
+        font: inherit;
+        box-sizing: border-box;
+      }
+      input,
+      textarea {
+        border: 1px solid #6666;
+        border-radius: 8px;
+        padding: 10px;
+        margin-top: 6px;
+      }
+      textarea {
+        min-height: 130px;
+      }
+      button {
+        margin-top: 12px;
+        border: 0;
+        border-radius: 8px;
+        padding: 10px 12px;
+        cursor: pointer;
+        font-weight: 700;
+      }
+      pre {
+        white-space: pre-wrap;
+        word-break: break-word;
+        border: 1px solid #6664;
+        border-radius: 8px;
+        padding: 12px;
+        margin-top: 10px;
+      }
+      code {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Hedera Enterprise Settlement Agent (HESA)</h1>
+    <p class="muted">Browser demo page for hosted judge submissions.</p>
+
+    <div class="panel">
+      <strong>Required environment variables</strong>
+      <ul>
+        <li><code>ACCOUNT_ID</code></li>
+        <li><code>PRIVATE_KEY</code></li>
+        <li><code>OPENAI_API_KEY</code></li>
+      </ul>
+      <p>If <code>DEMO_API_KEY</code> is set on server, provide it below.</p>
+    </div>
+
+    <div class="panel">
+      <label for="apiKey">DEMO_API_KEY (optional if server requires auth)</label>
+      <input id="apiKey" type="password" placeholder="Paste your DEMO_API_KEY" />
+
+      <label for="prompt">Workflow prompt</label>
+      <textarea id="prompt"></textarea>
+
+      <button id="runButton" type="button">Run HESA Workflow</button>
+      <pre id="status">Ready.</pre>
+      <pre id="output"></pre>
+    </div>
+
+    <script>
+      const demoPrompt =
+        "Run KYC for Acme Corp in UG for recurring SaaS billing, draft invoice for 1 HBAR due today, transfer 1 HBAR to 0.0.RECIPIENT_ACCOUNT_ID, then create a topic and submit an audit receipt message with invoice details.";
+
+      const promptEl = document.getElementById("prompt");
+      const statusEl = document.getElementById("status");
+      const outputEl = document.getElementById("output");
+      const apiKeyEl = document.getElementById("apiKey");
+      const runButton = document.getElementById("runButton");
+      promptEl.value = demoPrompt;
+
+      function setStatus(message) {
+        statusEl.textContent = message;
+      }
+
+      runButton.addEventListener("click", async () => {
+        const prompt = promptEl.value.trim();
+        if (!prompt) {
+          setStatus("Please enter a prompt.");
+          return;
+        }
+
+        setStatus("Running workflow...");
+        outputEl.textContent = "";
+
+        try {
+          const headers = { "Content-Type": "application/json" };
+          const apiKey = apiKeyEl.value.trim();
+          if (apiKey) headers.Authorization = `Bearer ${apiKey}`;
+
+          const response = await fetch("/run", {
+            method: "POST",
+            headers,
+            body: JSON.stringify({ prompt }),
+          });
+
+          const json = await response.json();
+          if (!response.ok) {
+            setStatus(`Error (${response.status})`);
+            outputEl.textContent = JSON.stringify(json, null, 2);
+            return;
+          }
+
+          setStatus("Success.");
+          outputEl.textContent = JSON.stringify(json, null, 2);
+        } catch (error) {
+          setStatus("Request failed.");
+          outputEl.textContent = String(error);
+        }
+      });
+    </script>
+  </body>
+</html>

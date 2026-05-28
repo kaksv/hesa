@@ -1,6 +1,8 @@
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import {
   AGENT_NAME,
   AGENT_SHORT_NAME,
@@ -11,6 +13,8 @@ import {
 
 const app = express();
 const port = Number(process.env.PORT ?? 3000);
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const docsHtmlPath = path.join(__dirname, "..", "docs", "demo.html");
 
 app.use(cors());
 app.use(express.json({ limit: "32kb" }));
@@ -49,6 +53,7 @@ app.get("/", (_req, res) => {
     status: "online",
     endpoints: {
       health: "GET /health",
+      docs: "GET /docs",
       run: "POST /run",
       demo: "GET /demo",
     },
@@ -63,6 +68,10 @@ app.get("/health", (_req, res) => {
     version: AGENT_VERSION,
     network: "hedera-testnet",
   });
+});
+
+app.get("/docs", (_req, res) => {
+  res.sendFile(docsHtmlPath);
 });
 
 app.get("/demo", (_req, res) => {
@@ -109,5 +118,6 @@ app.post("/run", async (req, res) => {
 app.listen(port, () => {
   console.log(`${AGENT_SHORT_NAME} API listening on port ${port}`);
   console.log(`Health: http://localhost:${port}/health`);
+  console.log(`Docs:   http://localhost:${port}/docs`);
   console.log(`Demo:   http://localhost:${port}/demo`);
 });

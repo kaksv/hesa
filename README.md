@@ -54,10 +54,11 @@ npm run start
 Endpoints:
 
 - `GET /health` — service health check
+- `GET /docs` — browser demo UI for judges
 - `GET /demo` — ready-made demo prompt + curl command
 - `POST /run` — execute settlement workflow (`{ "prompt": "..." }`)
 
-If `DEMO_API_KEY` is set, send:
+`DEMO_API_KEY` is optional. If set, send:
 
 `Authorization: Bearer <DEMO_API_KEY>`
 
@@ -65,7 +66,7 @@ If `DEMO_API_KEY` is set, send:
 
 1. Push repo to public GitHub.
 2. Railway → New Project → Deploy from GitHub.
-3. Set env vars from `.env.example` (`ACCOUNT_ID`, `PRIVATE_KEY`, `OPENAI_API_KEY`, `DEMO_API_KEY`, `PUBLIC_BASE_URL`).
+3. Set env vars from `.env.example` (`ACCOUNT_ID`, `PRIVATE_KEY`, `OPENAI_API_KEY`, and optional `DEMO_API_KEY`, `PUBLIC_BASE_URL`).
 4. Deploy using included `Dockerfile` + `railway.toml`.
 5. Verify: `curl https://YOUR-HOST/health`
 
@@ -80,8 +81,13 @@ Example production test:
 ```bash
 curl -X POST "https://YOUR-HOST/run" \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_DEMO_API_KEY" \
   -d '{"prompt":"Run KYC for Acme Corp in UG, draft invoice for 1 HBAR due today, transfer 1 HBAR to 0.0.RECIPIENT, then create topic and submit audit receipt."}'
+```
+
+If you enabled `DEMO_API_KEY`, add:
+
+```bash
+-H "Authorization: Bearer YOUR_DEMO_API_KEY"
 ```
 
 ## Submission checklist
